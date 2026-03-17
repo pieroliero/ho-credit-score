@@ -585,8 +585,8 @@
   const questions = [
     { id: 1, title: "Arrival & Punctuality",  bad: "No-show",        mid: "15+ min late",       good: "On time"           },
     { id: 2, title: "Photo Accuracy",         bad: "Bait & switch",  mid: "Close enough",        good: "Exact match"       },
-    { id: 3, title: "Pricing Transparency",   bad: "Changed after",  mid: "Some back & forth",   good: "Locked in upfront" },
-    { id: 4, title: "Phone Discipline",       bad: "Texting clients", mid: "Checked a few times", good: "Phone in purse"    },
+    { id: 3, title: "Date Investment",          bad: "Hidden fees",    mid: "No surprises",        good: "Locked in"         },
+    { id: 4, title: "Phone Discipline",       bad: "Constantly texting", mid: "Checked a few times", good: "Phone in purse"    },
     { id: 5, title: "Booking Communication",  bad: "Ghosted",         mid: "Spotty",              good: "Quick & clear"     },
     { id: 6, title: "Solo As Agreed",         bad: "Brought crew",    mid: "Mentioned a friend",  good: "Came alone"        },
     { id: 7, title: "Exit Behavior",          bad: "Full incident",   mid: "Minor awkwardness",   good: "Zero drama"        },
@@ -598,7 +598,7 @@
       min: 65, max: 80,
       label: "⭐ PRIME RATE",
       color: "#1B4332",
-      verdict: "You passed. He'll be back — and he's telling the Discord only good things about you. That's the highest honor. You might even get more clients."
+      verdict: "You passed. He'll be back — and he's telling the Discord only good things about you. That's the highest honor."
     },
     {
       min: 48, max: 64,
@@ -725,8 +725,8 @@
       canvas.toBlob(async (blob) => {
         const file = new File([blob], 'HoCreditScore.png', { type: 'image/png' });
 
-        // Try native share (mobile)
-        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        // Try native share — skip canShare check, attempt directly for iframe compatibility
+        if (navigator.share) {
           try {
             await navigator.share({
               files: [file],
@@ -734,10 +734,19 @@
               text: `My Ho Credit Score™: ${total}/80 — ${tier.label.replace(/[⭐⚠️🚨]/g,'').trim()}\n\nSent via Ho-Economics by PieroLiero\nhttps://whop.com/passport-pro/the-world-is-yours-0d/`
             });
           } catch (e) {
-            if (e.name !== 'AbortError') downloadImage(canvas);
+            if (e.name !== 'AbortError') {
+              // File share blocked (e.g. iframe) — fall back to text-only share
+              try {
+                await navigator.share({
+                  title: 'My Ho Credit Score™',
+                  text: `My Ho Credit Score™: ${total}/80 — ${tier.label.replace(/[⭐⚠️🚨]/g,'').trim()}\n\nSent via Ho-Economics by PieroLiero\nhttps://whop.com/passport-pro/the-world-is-yours-0d/`
+                });
+              } catch (e2) {
+                if (e2.name !== 'AbortError') downloadImage(canvas);
+              }
+            }
           }
         } else {
-          // Fallback: download
           downloadImage(canvas);
         }
 

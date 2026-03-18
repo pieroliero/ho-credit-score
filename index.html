@@ -32,7 +32,7 @@
     /* ── HEADER ── */
     .header {
       background: var(--green);
-      padding: 120px 20px 20px;
+      padding: 20px 20px 20px;
       text-align: center;
       border-bottom: 4px solid var(--yellow);
     }
@@ -820,6 +820,18 @@
 
     // Pre-populate share card tier color
     document.querySelector('#share-card-capture .share-card').style.background = tier.color;
+  }
+
+  // ── IFRAME AUTO-RESIZE ──────────────────────────────────────────────
+  function sendHeight() {
+    const h = document.body.scrollHeight;
+    window.parent.postMessage({ iframeHeight: h }, '*');
+  }
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(() => sendHeight());
+    ro.observe(document.body);
+  } else {
+    window.addEventListener('load', sendHeight);
   }
 </script>
 </body>

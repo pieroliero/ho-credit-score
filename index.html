@@ -509,7 +509,7 @@
 <!-- STICKY SCORE TRACKER -->
 <div class="score-tracker">
   <div class="label">Running Score</div>
-  <div class="score-display"><span id="live-score">—</span> / 80</div>
+  <div class="score-display"><span id="live-score">—</span> / 850</div>
   <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
 </div>
 
@@ -522,7 +522,7 @@
     <div class="result-header" id="result-header">
       <div class="result-label">Your Ho Credit Score</div>
       <div class="result-score" id="result-score-num">—</div>
-      <div class="result-of">out of 80</div>
+      <div class="result-of">out of 850</div>
       <div class="result-tier" id="result-tier-label">—</div>
     </div>
     <div class="result-body">
@@ -538,7 +538,7 @@
       <span class="sc-bowtie">🎀</span>
       <div class="sc-brand">Ho Credit Score™ by PieroLiero</div>
       <div class="sc-score" id="sc-score">—</div>
-      <div class="sc-of">out of 80</div>
+      <div class="sc-of">out of 850</div>
       <div class="sc-tier" id="sc-tier">—</div>
       <div class="sc-rows" id="sc-rows"></div>
       <div class="sc-footer">
@@ -592,39 +592,56 @@
     { id: 8, title: "Repeat Availability",    bad: "Blocked him",     mid: "Maybe",               good: "Available & willing"}
   ];
 
+  const MAX_RAW = 80;   // 8 questions × 10 max each
+  const MAX_SCALED = 850;
+
   const tiers = [
     {
-      min: 65, max: 80,
+      min: 700, max: 850,
       label: "⭐ PRIME RATE",
       color: "#1B4332",
       verdict: "You passed. He'll be back — and he's telling the Discord only good things about you. That's the highest honor."
     },
     {
-      min: 48, max: 64,
+      min: 500, max: 699,
       label: "STANDARD RATE",
       color: "#1A5276",
       verdict: "You're reliable. Not the most exciting option, but you deliver. He's keeping you in rotation. For now. Room to move up."
     },
     {
-      min: 28, max: 47,
+      min: 300, max: 499,
       label: "⚠️ SUBPRIME",
       color: "#D35400",
       verdict: "There is significant room for improvement. He noticed. The Discord has been consulted. Consider this a courtesy warning."
     },
     {
-      min: 8, max: 27,
+      min: 0, max: 299,
       label: "🚨 PREDATORY LENDING",
       color: "#C0392B",
       verdict: "He already knows. The Discord has been fully briefed. Every market has a reputation system. Yours has been filed."
     }
   ];
 
-  /* ── ZONE HELPER ── */
+  /* ── HELPERS ── */
+  function scaledScore(raw) {
+    return Math.round((raw / MAX_RAW) * MAX_SCALED);
+  }
+
   function zone(n) {
     if (n <= 3)  return 'zone-red';
     if (n <= 5)  return 'zone-orange';
     if (n <= 7)  return 'zone-blue';
     return 'zone-green';
+  }
+
+  function getTier(scaled) {
+    return tiers.find(t => scaled >= t.min && scaled <= t.max) || tiers[tiers.length - 1];
+  }
+
+  function scoreClass(rawVal) {
+    if (rawVal >= 8) return 'high';
+    if (rawVal >= 5) return 'mid';
+    return 'low';
   }
 
   /* ── BUILD QUESTIONS ── */
@@ -655,9 +672,7 @@
   const scores = {};
 
   function pick(qNum, value, btn) {
-    // Clear siblings
     document.querySelectorAll(`[data-q="${qNum}"]`).forEach(b => b.classList.remove('active'));
-    // Activate this one
     btn.classList.add('active');
     scores[qNum] = value;
     document.getElementById('card-' + qNum).classList.add('answered');
@@ -666,8 +681,9 @@
 
   function updateScore() {
     const vals     = Object.values(scores);
-    const total    = vals.reduce((a, b) => a + b, 0);
+    const raw      = vals.reduce((a, b) => a + b, 0);
     const answered = vals.length;
+    const total    = scaledScore(raw);
 
     document.getElementById('live-score').textContent = total;
     document.getElementById('progress-fill').style.width = ((answered / 8) * 100) + '%';
@@ -675,23 +691,14 @@
     if (answered === 8) showResult(total);
   }
 
-  function getTier(total) {
-    return tiers.find(t => total >= t.min && total <= t.max) || tiers[tiers.length - 1];
-  }
-
-  function scoreClass(s) {
-    if (s >= 8) return 'high';
-    if (s >= 5) return 'mid';
-    return 'low';
-  }
-
+  /* ── SHARE AS IMAGE ── */
   async function shareAsImage() {
     const btn = document.getElementById('share-img-btn');
     btn.textContent = 'Generating…';
     btn.disabled = true;
 
-    // Populate the hidden share card
-    const total = Object.values(scores).reduce((a, b) => a + b, 0);
+    const raw   = Object.values(scores).reduce((a, b) => a + b, 0);
+    const total = scaledScore(raw);
     const tier  = getTier(total);
 
     document.getElementById('sc-score').textContent = total;
@@ -709,7 +716,6 @@
         </div>`;
     });
 
-    // Render to canvas
     const el = document.getElementById('share-card-capture');
     el.style.left = '-9999px';
 
@@ -724,21 +730,19 @@
       canvas.toBlob(async (blob) => {
         const file = new File([blob], 'HoCreditScore.png', { type: 'image/png' });
 
-        // Try native share — skip canShare check, attempt directly for iframe compatibility
         if (navigator.share) {
           try {
             await navigator.share({
               files: [file],
               title: 'My Ho Credit Score™',
-              text: `My Ho Credit Score™: ${total}/80 — ${tier.label.replace(/[⭐⚠️🚨]/g,'').trim()}\n\nSent via Ho-Economics by PieroLiero\nhttps://whop.com/passport-pro/the-world-is-yours-0d/`
+              text: `My Ho Credit Score™: ${total}/850 — ${tier.label.replace(/[⭐⚠️🚨]/g,'').trim()}\n\nSent via Ho-Economics by PieroLiero\nhttps://whop.com/passport-pro/the-world-is-yours-0d/`
             });
           } catch (e) {
             if (e.name !== 'AbortError') {
-              // File share blocked (e.g. iframe) — fall back to text-only share
               try {
                 await navigator.share({
                   title: 'My Ho Credit Score™',
-                  text: `My Ho Credit Score™: ${total}/80 — ${tier.label.replace(/[⭐⚠️🚨]/g,'').trim()}\n\nSent via Ho-Economics by PieroLiero\nhttps://whop.com/passport-pro/the-world-is-yours-0d/`
+                  text: `My Ho Credit Score™: ${total}/850 — ${tier.label.replace(/[⭐⚠️🚨]/g,'').trim()}\n\nSent via Ho-Economics by PieroLiero\nhttps://whop.com/passport-pro/the-world-is-yours-0d/`
                 });
               } catch (e2) {
                 if (e2.name !== 'AbortError') downloadImage(canvas);
@@ -767,14 +771,16 @@
     link.click();
   }
 
+  /* ── SMS ── */
   function sendViaSMS() {
-    const raw   = document.getElementById('phone-input').value.replace(/\D/g, '');
-    if (!raw || raw.length < 10) {
+    const phone = document.getElementById('phone-input').value.replace(/\D/g, '');
+    if (!phone || phone.length < 10) {
       alert('Please enter a valid phone number.');
       return;
     }
 
-    const total = Object.values(scores).reduce((a, b) => a + b, 0);
+    const raw   = Object.values(scores).reduce((a, b) => a + b, 0);
+    const total = scaledScore(raw);
     const tier  = getTier(total);
 
     let breakdown = '';
@@ -784,15 +790,16 @@
 
     const msg =
       `🎀 My Ho Credit Score™\n\n` +
-      `Score: ${total} / 80\n` +
+      `Score: ${total} / 850\n` +
       `Tier: ${tier.label}\n\n` +
       `Breakdown:\n${breakdown}\n` +
       `Sent via Ho-Economics by PieroLiero\n` +
       `https://whop.com/passport-pro/the-world-is-yours-0d/`;
 
-    window.location.href = `sms:${raw}?&body=${encodeURIComponent(msg)}`;
+    window.location.href = `sms:${phone}?&body=${encodeURIComponent(msg)}`;
   }
 
+  /* ── SHOW RESULT ── */
   function showResult(total) {
     const tier = getTier(total);
 
@@ -801,7 +808,6 @@
     document.getElementById('result-verdict').textContent    = tier.verdict;
     document.getElementById('result-header').style.background = tier.color;
 
-    // Breakdown
     const rows = document.getElementById('breakdown-rows');
     rows.innerHTML = '';
     questions.forEach(q => {
@@ -817,7 +823,6 @@
     resultEl.classList.add('visible');
     setTimeout(() => resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
 
-    // Pre-populate share card tier color
     document.querySelector('#share-card-capture .share-card').style.background = tier.color;
   }
 

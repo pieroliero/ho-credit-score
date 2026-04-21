@@ -469,8 +469,14 @@
     .btn-share-img:active { opacity: 0.85; }
 
     /* hide the share card from page flow, only used for capture */
+    .share-card-wrapper {
+      position: relative;
+      width: 0;
+      height: 0;
+      overflow: hidden;
+    }
     #share-card-capture {
-      position: fixed;
+      position: absolute;
       left: -9999px;
       top: 0;
       width: 360px;
@@ -533,17 +539,19 @@
   </div>
 
   <!-- HIDDEN SHARE CARD (captured as image) -->
-  <div id="share-card-capture">
-    <div class="share-card">
-      <span class="sc-bowtie">🎀</span>
-      <div class="sc-brand">Ho Credit Score™ by PieroLiero</div>
-      <div class="sc-score" id="sc-score">—</div>
-      <div class="sc-of">out of 850</div>
-      <div class="sc-tier" id="sc-tier">—</div>
-      <div class="sc-rows" id="sc-rows"></div>
-      <div class="sc-footer">
-        <div class="sc-footer-sent">Sent via Ho-Economics by PieroLiero</div>
-        <div class="sc-footer-link">whop.com/passport-pro/the-world-is-yours-0d/</div>
+  <div class="share-card-wrapper">
+    <div id="share-card-capture">
+      <div class="share-card">
+        <span class="sc-bowtie">🎀</span>
+        <div class="sc-brand">Ho Credit Score™ by PieroLiero</div>
+        <div class="sc-score" id="sc-score">—</div>
+        <div class="sc-of">out of 850</div>
+        <div class="sc-tier" id="sc-tier">—</div>
+        <div class="sc-rows" id="sc-rows"></div>
+        <div class="sc-footer">
+          <div class="sc-footer-sent">Sent via Ho-Economics by PieroLiero</div>
+          <div class="sc-footer-link">whop.com/passport-pro/the-world-is-yours-0d/</div>
+        </div>
       </div>
     </div>
   </div>
@@ -717,6 +725,9 @@
     });
 
     const el = document.getElementById('share-card-capture');
+    const wrapper = el.parentElement;
+    // Temporarily allow overflow so html2canvas can render the card
+    wrapper.style.overflow = 'visible';
     el.style.left = '-9999px';
 
     try {
@@ -726,6 +737,9 @@
         useCORS: true,
         logging: false
       });
+
+      // Re-hide the wrapper
+      wrapper.style.overflow = 'hidden';
 
       canvas.toBlob(async (blob) => {
         const file = new File([blob], 'HoCreditScore.png', { type: 'image/png' });
@@ -758,6 +772,7 @@
       }, 'image/png');
 
     } catch (e) {
+      wrapper.style.overflow = 'hidden';
       alert('Could not generate image. Try screenshotting instead.');
       btn.textContent = 'Generate & Share Score Card →';
       btn.disabled = false;
